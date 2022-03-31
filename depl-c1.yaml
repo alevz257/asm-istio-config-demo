@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: golanghostname
+  namespace: golanghostname
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: golanghostname
+    #load: test
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golanghostname-c1
+  namespace: golanghostname
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: golanghostname
+        #load: test
+  template:
+    metadata:
+      labels:
+        app: golanghostname
+          #load: test
+        version: v1
+    spec:
+      containers:
+      # [START]
+      - name: golanghostname-c1
+        image: asia.gcr.io/alevz-demo-1/golanghostname:latest
+      # [END]
+      # [Start Fluentbit]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: golanghostname2-c1
+  namespace: golanghostname
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: golanghostname
+        #load: test
+  template:
+    metadata:
+      labels:
+        app: golanghostname
+          #load: test
+        version: v2
+    spec:
+      containers:
+      # [START]
+      - name: golanghostname-c1
+        image: asia.gcr.io/alevz-demo-1/golanghostname:latest

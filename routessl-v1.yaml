@@ -1,0 +1,107 @@
+# Copyright 2020 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: frontend-gateway
+  namespace: golanghostname
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - alevz.info
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: golang
+    hosts:
+    - alevz.info
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: frontend-ingress
+  namespace: golanghostname
+spec:
+  hosts:
+  - alevz.info
+  gateways:
+  - frontend-gateway
+  http:
+  - match:
+    - headers:
+        end-user:
+          regex: ^.*@alevz.info
+    route:
+    - destination:
+        host: golanghostname
+        subset: v2
+        port:
+          number: 80
+  - route:
+    - destination:
+        host: golanghostname
+        subset: v1
+        port:
+          number: 80
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: frontend-dr
+  namespace: golanghostname
+spec:
+  host: golanghostname
+    #trafficPolicy:
+    #  loadBalancer:
+    #    consistentHash:
+    #      httpHeaderName: X-Forwarded-For
+    #          #name: user
+    #          #ttl: 10s
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+---
+# apiVersion: networking.istio.io/v1beta1
+# kind: VirtualService
+# metadata:
+#   name: balance-reader-vs
+# spec:
+#   hosts:
+#   - balancereader
+#   http:
+#   - fault:
+#       delay:
+#         percent: 100
+#         fixedDelay: 3s
+#     route:
+#     - destination:
+#         host: balancereader
+#         port:
+#           number: 8080
